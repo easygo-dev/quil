@@ -40,14 +40,15 @@ sleep 1
 cat << 'EOF' >| $SCRIPT_FILE
 #!/bin/bash
 
-NODE_DIR=~/ceremonyclient/node
-NODE_CMD=./node-1.4.20-linux-amd64
-CHECK_COMMAND="$NODE_DIR/$NODE_CMD -node-info"
+# check with that cmd
+CHECK_COMMAND="grpcurl -plaintext localhost:8337 quilibrium.node.node.pb.NodeService.GetNetworkInfo"
 
+# log
 LOG_DIR=/root/scripts/log
 LOG_FILE=$LOG_DIR/node_check.log
 MAX_LOG_SIZE=10240
 
+# rotate
 rotate_logs() {
     if [ -f "$LOG_FILE" ]; then
         local log_size_kb=$(du -k "$LOG_FILE" | cut -f1)
@@ -58,17 +59,22 @@ rotate_logs() {
     fi
 }
 
+# making dir
 mkdir -p $LOG_DIR
 
+# rotate
 rotate_logs
 
+# command
 output=$($CHECK_COMMAND 2>&1)
 
+# log
 timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 echo "$timestamp - Output from command:" | tee -a $LOG_FILE
 echo "$output" | tee -a $LOG_FILE
 
-if echo "$output" | grep -q "gRPC Not Enabled, Please Configure"; then
+# check errors in result
+if echo "$output" | grep -q "Failed to dial target host"; then
     echo "$timestamp - Error detected: restarting node" | tee -a $LOG_FILE
     sudo service ceremonyclient restart | tee -a $LOG_FILE
     if [ $? -ne 0 ]; then
@@ -79,6 +85,7 @@ if echo "$output" | grep -q "gRPC Not Enabled, Please Configure"; then
 else
     echo "$timestamp - Node is running correctly" | tee -a $LOG_FILE
 fi
+
 EOF
 check_command "Failed to create or overwrite monitoring script"
 
