@@ -41,7 +41,7 @@ cat << 'EOF' >| $SCRIPT_FILE
 #!/bin/bash
 
 # check with that cmd
-CHECK_COMMAND="grpcurl -plaintext localhost:8337 quilibrium.node.node.pb.NodeService.GetNetworkInfo"
+CHECK_COMMAND="/root/go/bin/grpcurl -plaintext localhost:8337 quilibrium.node.node.pb.NodeService.GetNetworkInfo"
 
 # log
 LOG_DIR=/root/scripts/log
