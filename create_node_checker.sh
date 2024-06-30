@@ -40,15 +40,22 @@ sleep 1
 cat << 'EOF' >| $SCRIPT_FILE
 #!/bin/bash
 
-# check with that cmd
-CHECK_COMMAND="/root/go/bin/grpcurl -plaintext localhost:8337 quilibrium.node.node.pb.NodeService.GetNetworkInfo"
+# Determine the path to grpcurl
+GRPCURL_PATH=$(which grpcurl)
+if [ -z "$GRPCURL_PATH" ]; then
+    echo "grpcurl not found in PATH"
+    exit 1
+fi
 
-# log
+# Command to check the node status
+CHECK_COMMAND="$GRPCURL_PATH -plaintext localhost:8337 quilibrium.node.node.pb.NodeService.GetNetworkInfo"
+
+# Path to log files
 LOG_DIR=/root/scripts/log
 LOG_FILE=$LOG_DIR/node_check.log
-MAX_LOG_SIZE=10240
+MAX_LOG_SIZE=10240 # Maximum log file size in kilobytes (10MB)
 
-# rotate
+# Function to rotate logs
 rotate_logs() {
     if [ -f "$LOG_FILE" ]; then
         local log_size_kb=$(du -k "$LOG_FILE" | cut -f1)
@@ -59,24 +66,20 @@ rotate_logs() {
     fi
 }
 
-# making dir
+# Create log directory if it does not exist
 mkdir -p $LOG_DIR
 
-# rotate
+# Rotate logs before writing
 rotate_logs
 
-# command
+# Execute the command and save the result
 output=$($CHECK_COMMAND 2>&1)
 
-# log
+# Check for errors in the result
 timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-echo "$timestamp - Output from command:" | tee -a $LOG_FILE
-echo "$output" | tee -a $LOG_FILE
-
-# check errors in result
 if echo "$output" | grep -q "Failed to dial target host"; then
     echo "$timestamp - Error detected: restarting node" | tee -a $LOG_FILE
-    sudo service ceremonyclient restart | tee -a $LOG_FILE
+    sudo service ceremonyclient restart >> $LOG_FILE 2>&1
     if [ $? -ne 0 ]; then
         echo "$timestamp - Failed to restart ceremonyclient service." | tee -a $LOG_FILE
     else
@@ -85,6 +88,7 @@ if echo "$output" | grep -q "Failed to dial target host"; then
 else
     echo "$timestamp - Node is running correctly" | tee -a $LOG_FILE
 fi
+
 
 EOF
 check_command "Failed to create or overwrite monitoring script"
