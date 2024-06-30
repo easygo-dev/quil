@@ -1,7 +1,9 @@
 #!/bin/bash
 
 cat << "EOF"
+
 Processing...
+
 EOF
 
 sleep 5 # add sleep time
@@ -10,14 +12,8 @@ sleep 5 # add sleep time
 SERVICE_FILE="/lib/systemd/system/ceremonyclient.service"
 if [ ! -f "$SERVICE_FILE" ]; then
     echo "Error: The file $SERVICE_FILE does not exist. Ceremonyclient service setup failed."
-# Determine the path to grpcurl
-echo "Determining path to grpcurl..."
-GRPCURL_PATH=$(which grpcurl)
-if [ -z "$GRPCURL_PATH" ]; then
-    echo "grpcurl not found in PATH"
     exit 1
 fi
-echo "Found grpcurl at: $GRPCURL_PATH"
 
 # Define variables
 SCRIPT_DIR=~/scripts
@@ -44,22 +40,15 @@ sleep 1
 cat << 'EOF' >| $SCRIPT_FILE
 #!/bin/bash
 
-# Determine the path to grpcurl
-GRPCURL_PATH=$(which grpcurl)
-if [ -z "$GRPCURL_PATH" ]; then
-    echo "grpcurl not found in PATH"
-    exit 1
-fi
+# check with that cmd
+CHECK_COMMAND="/root/go/bin/grpcurl -plaintext localhost:8337 quilibrium.node.node.pb.NodeService.GetNetworkInfo"
 
-# Command to check the node status
-CHECK_COMMAND="$GRPCURL_PATH -plaintext localhost:8337 quilibrium.node.node.pb.NodeService.GetNetworkInfo"
-
-# Path to log files
+# log
 LOG_DIR=/root/scripts/log
 LOG_FILE=$LOG_DIR/node_check.log
-MAX_LOG_SIZE=10240 # Maximum log file size in kilobytes (10MB)
+MAX_LOG_SIZE=10240
 
-# Function to rotate logs
+# rotate
 rotate_logs() {
     if [ -f "$LOG_FILE" ]; then
         local log_size_kb=$(du -k "$LOG_FILE" | cut -f1)
@@ -70,20 +59,24 @@ rotate_logs() {
     fi
 }
 
-# Create log directory if it does not exist
+# making dir
 mkdir -p $LOG_DIR
 
-# Rotate logs before writing
+# rotate
 rotate_logs
 
-# Execute the command and save the result
+# command
 output=$($CHECK_COMMAND 2>&1)
 
-# Check for errors in the result
+# log
 timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+echo "$timestamp - Output from command:" | tee -a $LOG_FILE
+echo "$output" | tee -a $LOG_FILE
+
+# check errors in result
 if echo "$output" | grep -q "Failed to dial target host"; then
     echo "$timestamp - Error detected: restarting node" | tee -a $LOG_FILE
-    sudo service ceremonyclient restart >> $LOG_FILE 2>&1
+    sudo service ceremonyclient restart | tee -a $LOG_FILE
     if [ $? -ne 0 ]; then
         echo "$timestamp - Failed to restart ceremonyclient service." | tee -a $LOG_FILE
     else
