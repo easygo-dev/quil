@@ -48,7 +48,7 @@ echo "Found grpcurl at: $GRPCURL_PATH"
 # Overwrite the script if it already exists
 echo "Creating or overwriting script..."
 sleep 1
-cat << EOF >| $SCRIPT_FILE
+cat << 'EOF_SCRIPT' >| $SCRIPT_FILE
 #!/bin/bash
 
 # check with that cmd
@@ -97,7 +97,7 @@ else
     echo "\$timestamp - Node is running correctly" | tee -a \$LOG_FILE
 fi
 
-EOF
+EOF_SCRIPT
 check_command "Failed to create or overwrite monitoring script"
 
 # Make the script executable
