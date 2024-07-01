@@ -90,8 +90,6 @@ output=$(${CHECK_COMMAND} 2>&1)
 
 # log
 timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-echo "${timestamp} - Output from command:" | tee -a ${LOG_FILE}
-echo "${output}" | tee -a ${LOG_FILE}
 
 # check errors in result
 if echo "${output}" | grep -q "Failed to dial target host"; then
