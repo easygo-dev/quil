@@ -124,7 +124,7 @@ else
     # Create a cron job to run the script every 16 minutes
     echo "⌛️ Setting up cron job..."
     sleep 1
-    if (crontab -l 2>/dev/null; echo "*/16 * * * * $SCRIPT_FILE >> /root/scripts/node_checker_cron.log 2>&1") | crontab -; then
+    if (crontab -l 2>/dev/null; echo "*/16 * * * * $SCRIPT_FILE") | crontab -; then
         echo "Cron job created successfully."
         sleep 1
     else
