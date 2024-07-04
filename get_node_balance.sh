@@ -117,20 +117,17 @@ if [ -f "\${PREV_LOG_FILE}" ]; then
 else
     previous_balance=0
     echo "\${current_balance}" > \${PREV_LOG_FILE}
+    echo "No previous balance file found. Creating with current balance."
 fi
 echo "previous_balance: \$previous_balance" # Debug output
 
-# Calculate balance difference
-if [ -z "\$current_balance" ]; then
-    echo "\${timestamp} - Error: current balance is empty" | tee -a \${LOG_FILE}
-    exit 1
-fi
-
+# Check if previous_balance is still empty
 if [ -z "\$previous_balance" ]; then
     echo "\${timestamp} - Error: previous balance is empty" | tee -a \${LOG_FILE}
     exit 1
 fi
 
+# Calculate balance difference
 echo "Calculating balance difference: \$current_balance - \$previous_balance" # Debug output
 balance_diff=\$(echo "\$current_balance - \$previous_balance" | bc)
 echo "balance_diff: \$balance_diff" # Debug output
