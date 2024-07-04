@@ -71,7 +71,7 @@ NODE_CMD="cd ~/ceremonyclient/node && ./node-\${NODE_VERSION}-linux-$ARCH -node-
 echo "NODE_CMD: \$NODE_CMD" # Debug output
 
 # Check if node binary exists
-if [ ! -f "~/ceremonyclient/node/node-\${NODE_VERSION}-linux-$ARCH" ]; then
+if [ ! -f "$HOME/ceremonyclient/node/node-\${NODE_VERSION}-linux-$ARCH" ]; then
     echo "Error: Node binary does not exist"
     exit 1
 fi
