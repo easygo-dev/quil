@@ -121,7 +121,9 @@ if [ -z "\$previous_balance" ]; then
     exit 1
 fi
 
+echo "Calculating balance difference: \$current_balance - \$previous_balance" # Debug output
 balance_diff=\$(echo "\$current_balance - \$previous_balance" | bc)
+echo "balance_diff: \$balance_diff" # Debug output
 
 # Log balances and difference
 echo "\${timestamp} - Previous balance: \${previous_balance} QUIL, Current balance: \${current_balance} QUIL, Difference: \${balance_diff} QUIL" | tee -a \${LOG_FILE}
