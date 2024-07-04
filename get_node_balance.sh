@@ -116,6 +116,7 @@ if [ -f "\${PREV_LOG_FILE}" ]; then
     previous_balance=\$(cat \${PREV_LOG_FILE})
 else
     previous_balance=0
+    echo "\${current_balance}" > \${PREV_LOG_FILE}
 fi
 echo "previous_balance: \$previous_balance" # Debug output
 
