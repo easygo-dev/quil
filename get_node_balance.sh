@@ -79,7 +79,7 @@ fi
 # log
 LOG_DIR=/root/scripts/log
 LOG_FILE=\${LOG_DIR}/balance_check.log
-PREV_LOG_FILE=\${LOG_DIR}/prev_balance_check.log
+CSV_FILE=\${LOG_DIR}/balance_check.csv
 MAX_LOG_SIZE=10240
 
 # rotate logs
@@ -111,32 +111,35 @@ timestamp=\$(date '+%Y-%m-%d %H:%M:%S')
 current_balance=\$(echo "\${current_output}" | grep -oP '(?<=Unclaimed balance: )[0-9]+\.[0-9]+')
 echo "current_balance: \$current_balance" # Debug output
 
-# Read previous balance
-if [ -f "\${PREV_LOG_FILE}" ]; then
-    previous_balance=\$(cat \${PREV_LOG_FILE})
+# Read previous balance from CSV file
+if [ -f "\${CSV_FILE}" ]; then
+    previous_balance=\$(tail -n 1 \${CSV_FILE} | cut -d ',' -f 2)
 else
     previous_balance=0
-    echo "\${current_balance}" > \${PREV_LOG_FILE}
-    echo "No previous balance file found. Creating with current balance."
+    echo "Date,Current Balance,Previous Balance,Difference" > \${CSV_FILE}
+    echo "\${timestamp},\${current_balance},0,0" >> \${CSV_FILE}
+    echo "No previous balance found. CSV file created with current balance."
 fi
 echo "previous_balance: \$previous_balance" # Debug output
 
-# Check if previous_balance is still empty
-if [ -z "\$previous_balance" ]; then
-    echo "\${timestamp} - Error: previous balance is empty" | tee -a \${LOG_FILE}
+# Calculate balance difference
+if [ -z "\$current_balance" ]; then
+    echo "\${timestamp} - Error: current balance is empty" | tee -a \${LOG_FILE}
     exit 1
 fi
 
-# Calculate balance difference
-echo "Calculating balance difference: \$current_balance - \$previous_balance" # Debug output
+if [ -z "\$previous_balance" ]; then
+    previous_balance=0
+fi
+
 balance_diff=\$(echo "\$current_balance - \$previous_balance" | bc)
 echo "balance_diff: \$balance_diff" # Debug output
 
 # Log balances and difference
 echo "\${timestamp} - Previous balance: \${previous_balance} QUIL, Current balance: \${current_balance} QUIL, Difference: \${balance_diff} QUIL" | tee -a \${LOG_FILE}
 
-# Save current balance for next run
-echo "\${current_balance}" > \${PREV_LOG_FILE}
+# Save current balance to CSV file
+echo "\${timestamp},\${current_balance},\${previous_balance},\${balance_diff}" >> \${CSV_FILE}
 
 EOF_SCRIPT
 check_command "Failed to create temporary script"
