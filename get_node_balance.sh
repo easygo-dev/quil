@@ -15,8 +15,8 @@ fi
 
 # Define variables
 SCRIPT_DIR=~/scripts
-SCRIPT_FILE=$SCRIPT_DIR/node_checker.sh
-TEMP_SCRIPT_FILE=$SCRIPT_DIR/node_checker_temp.sh
+SCRIPT_FILE=$SCRIPT_DIR/balance_checker.sh
+TEMP_SCRIPT_FILE=$SCRIPT_DIR/balance_checker_temp.sh
 
 # Function to check if a command succeeded
 check_command() {
@@ -27,30 +27,11 @@ check_command() {
     fi
 }
 
-# Function to find the path to grpcurl
-find_grpcurl_path() {
-    GRPCURL_PATH=$(which grpcurl)
-    check_command "Failed to find grpcurl with which command"
-    echo $GRPCURL_PATH
-}
-
 # Create the scripts directory if it doesn't exist
 echo "Creating script directory..."
 sleep 1
 mkdir -p $SCRIPT_DIR
 check_command "Failed to create script directory"
-
-# Find the path to grpcurl
-GRPCURL_PATH=$(find_grpcurl_path)
-echo "Found grpcurl at: $GRPCURL_PATH"
-
-# Create the temporary script with the path to grpcurl
-echo "Creating temporary script with grpcurl path..."
-sleep 1
-cat << EOF_TEMP >| $TEMP_SCRIPT_FILE
-GRPCURL_PATH="$GRPCURL_PATH"
-EOF_TEMP
-check_command "Failed to create temporary script with grpcurl path"
 
 # Create or overwrite the final script
 echo "Creating or overwriting final script..."
@@ -82,8 +63,8 @@ NODE_CMD="cd ~/ceremonyclient/node && ./node-${NODE_VERSION}-linux-${ARCH} -node
 
 # log
 LOG_DIR=/root/scripts/log
-LOG_FILE=${LOG_DIR}/node_check.log
-PREV_LOG_FILE=${LOG_DIR}/prev_node_check.log
+LOG_FILE=${LOG_DIR}/balance_check.log
+PREV_LOG_FILE=${LOG_DIR}/prev_balance_check.log
 MAX_LOG_SIZE=10240
 
 # rotate logs
