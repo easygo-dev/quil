@@ -70,6 +70,12 @@ echo "Detected node version: \$NODE_VERSION"
 NODE_CMD="cd ~/ceremonyclient/node && ./node-\${NODE_VERSION}-linux-$ARCH -node-info"
 echo "NODE_CMD: \$NODE_CMD" # Debug output
 
+# Check if node binary exists
+if [ ! -f "~/ceremonyclient/node/node-\${NODE_VERSION}-linux-$ARCH" ]; then
+    echo "Error: Node binary does not exist"
+    exit 1
+fi
+
 # log
 LOG_DIR=/root/scripts/log
 LOG_FILE=\${LOG_DIR}/balance_check.log
