@@ -53,9 +53,12 @@ cat << EOF_SCRIPT >| $TEMP_SCRIPT_FILE
 
 # Function to extract node version
 extract_node_version() {
-    local version_info=$(journalctl -u ceremonyclient -r --no-hostname -n 1 -g "Quilibrium Node" -o cat)
-    local version=$(echo \$version_info | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
-    local patch=$(echo \$version_info | grep -oP '(?<=-p)[0-9]+')
+    local version_info
+    version_info=\$(journalctl -u ceremonyclient -r --no-hostname -n 1 -g "Quilibrium Node" -o cat)
+    local version
+    version=\$(echo \$version_info | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
+    local patch
+    patch=\$(echo \$version_info | grep -oP '(?<=-p)[0-9]+')
     echo "\$version.\$patch"
 }
 
@@ -75,7 +78,8 @@ MAX_LOG_SIZE=10240
 # rotate logs
 rotate_logs() {
     if [ -f "\${LOG_FILE}" ]; then
-        local log_size_kb=\$(du -k "\${LOG_FILE}" | cut -f1)
+        local log_size_kb
+        log_size_kb=\$(du -k "\${LOG_FILE}" | cut -f1)
         if [ "\${log_size_kb}" -ge "\${MAX_LOG_SIZE}" ]; then
             mv "\${LOG_FILE}" "\${LOG_FILE}.1"
             touch "\${LOG_FILE}"
