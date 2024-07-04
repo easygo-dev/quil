@@ -54,6 +54,7 @@ cat << EOF_SCRIPT >| $TEMP_SCRIPT_FILE
 # Function to extract node version
 extract_node_version() {
     version_info=\$(journalctl -u ceremonyclient -r --no-hostname -n 1 -g "Quilibrium Node" -o cat)
+    echo "version_info: \$version_info" # Debug output
     version=\$(echo \$version_info | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
     patch=\$(echo \$version_info | grep -oP '(?<=-p)[0-9]+')
     echo "\$version.\$patch"
@@ -106,6 +107,16 @@ else
 fi
 
 # Calculate balance difference
+if [ -z "\$current_balance" ]; then
+    echo "\${timestamp} - Error: current balance is empty" | tee -a \${LOG_FILE}
+    exit 1
+fi
+
+if [ -z "\$previous_balance" ]; then
+    echo "\${timestamp} - Error: previous balance is empty" | tee -a \${LOG_FILE}
+    exit 1
+fi
+
 balance_diff=\$(echo "\$current_balance - \$previous_balance" | bc)
 
 # Log balances and difference
