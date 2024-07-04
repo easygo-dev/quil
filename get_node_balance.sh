@@ -95,7 +95,7 @@ mkdir -p \${LOG_DIR}
 rotate_logs
 
 # Get current node info
-current_output=\$(${NODE_CMD} 2>&1)
+current_output=\$(eval "\$NODE_CMD" 2>&1)
 echo "current_output: \$current_output" # Debug output
 
 # Log timestamp
