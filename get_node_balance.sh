@@ -15,8 +15,8 @@ fi
 
 # Define variables
 SCRIPT_DIR=~/scripts
-SCRIPT_FILE=$SCRIPT_DIR/balance_checker.sh
-TEMP_SCRIPT_FILE=$SCRIPT_DIR/balance_checker_temp.sh
+SCRIPT_FILE=$SCRIPT_DIR/balance_check.sh
+TEMP_SCRIPT_FILE=$SCRIPT_DIR/balance_check_temp.sh
 
 # Function to check if a command succeeded
 check_command() {
@@ -33,10 +33,10 @@ sleep 1
 mkdir -p $SCRIPT_DIR
 check_command "Failed to create script directory"
 
-# Create or overwrite the final script
-echo "Creating or overwriting final script..."
+# Create the temporary script
+echo "Creating temporary script..."
 sleep 1
-cat << 'EOF_SCRIPT' >> $TEMP_SCRIPT_FILE
+cat << EOF_TEMP >| $TEMP_SCRIPT_FILE
 #!/bin/bash
 
 # Function to extract node version
@@ -63,8 +63,8 @@ NODE_CMD="cd ~/ceremonyclient/node && ./node-${NODE_VERSION}-linux-${ARCH} -node
 
 # log
 LOG_DIR=/root/scripts/log
-LOG_FILE=${LOG_DIR}/balance_check.log
-PREV_LOG_FILE=${LOG_DIR}/prev_balance_check.log
+LOG_FILE=${LOG_DIR}/node_check.log
+PREV_LOG_FILE=${LOG_DIR}/prev_node_check.log
 MAX_LOG_SIZE=10240
 
 # rotate logs
@@ -109,7 +109,8 @@ echo "${timestamp} - Previous balance: ${previous_balance} QUIL, Current balance
 # Save current balance for next run
 echo "${current_balance}" > ${PREV_LOG_FILE}
 
-EOF_SCRIPT
+EOF_TEMP
+check_command "Failed to create temporary script"
 
 # Move the temporary script to the final script location
 mv $TEMP_SCRIPT_FILE $SCRIPT_FILE
@@ -146,4 +147,3 @@ echo "You can find the monitoring script at: $SCRIPT_FILE"
 sleep 1
 echo "Logs will be written to: /root/scripts/log/"
 sleep 1
-
