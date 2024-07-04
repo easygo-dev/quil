@@ -66,6 +66,7 @@ echo "Detected node version: \$NODE_VERSION"
 
 # Define command to get node info
 NODE_CMD="cd ~/ceremonyclient/node && ./node-\${NODE_VERSION}-linux-$ARCH -node-info"
+echo "NODE_CMD: \$NODE_CMD" # Debug output
 
 # log
 LOG_DIR=/root/scripts/log
@@ -92,12 +93,14 @@ rotate_logs
 
 # Get current node info
 current_output=\$(${NODE_CMD} 2>&1)
+echo "current_output: \$current_output" # Debug output
 
 # Log timestamp
 timestamp=\$(date '+%Y-%m-%d %H:%M:%S')
 
 # Extract current balance
 current_balance=\$(echo "\${current_output}" | grep -oP '(?<=Unclaimed balance: )[0-9]+\.[0-9]+')
+echo "current_balance: \$current_balance" # Debug output
 
 # Read previous balance
 if [ -f "\${PREV_LOG_FILE}" ]; then
@@ -105,6 +108,7 @@ if [ -f "\${PREV_LOG_FILE}" ]; then
 else
     previous_balance=0
 fi
+echo "previous_balance: \$previous_balance" # Debug output
 
 # Calculate balance difference
 if [ -z "\$current_balance" ]; then
