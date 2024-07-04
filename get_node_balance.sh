@@ -27,6 +27,18 @@ check_command() {
     fi
 }
 
+# Get CPU architecture
+ARCH=$(uname -m)
+if [ "$ARCH" == "x86_64" ]; then
+    ARCH="amd64"
+elif [ "$ARCH" == "aarch64" ]; then
+    ARCH="arm64"
+else
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+fi
+echo "Detected architecture: $ARCH"
+
 # Create the scripts directory if it doesn't exist
 echo "Creating script directory..."
 sleep 1
@@ -36,78 +48,71 @@ check_command "Failed to create script directory"
 # Create the temporary script
 echo "Creating temporary script..."
 sleep 1
-cat << 'EOF_SCRIPT' >| $TEMP_SCRIPT_FILE
+cat << EOF_SCRIPT >| $TEMP_SCRIPT_FILE
 #!/bin/bash
 
 # Function to extract node version
 extract_node_version() {
     local version_info=$(journalctl -u ceremonyclient -r --no-hostname -n 1 -g "Quilibrium Node" -o cat)
-    local version=$(echo $version_info | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
-    local patch=$(echo $version_info | grep -oP '(?<=-p)[0-9]+')
-    echo "$version.$patch"
+    local version=$(echo \$version_info | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
+    local patch=$(echo \$version_info | grep -oP '(?<=-p)[0-9]+')
+    echo "\$version.\$patch"
 }
 
 # Get node version
-NODE_VERSION=$(extract_node_version)
-echo "Detected node version: $NODE_VERSION"
-
-# Get CPU architecture
-ARCH=$(uname -m)
-if [ "$ARCH" == "x86_64" ]; then
-    ARCH="amd64"
-fi
-echo "Detected architecture: $ARCH"
+NODE_VERSION=\$(extract_node_version)
+echo "Detected node version: \$NODE_VERSION"
 
 # Define command to get node info
-NODE_CMD="cd ~/ceremonyclient/node && ./node-${NODE_VERSION}-linux-${ARCH} -node-info"
+NODE_CMD="cd ~/ceremonyclient/node && ./node-\${NODE_VERSION}-linux-$ARCH -node-info"
 
 # log
 LOG_DIR=/root/scripts/log
-LOG_FILE=${LOG_DIR}/balance_check.log
-PREV_LOG_FILE=${LOG_DIR}/prev_balance_check.log
+LOG_FILE=\${LOG_DIR}/balance_check.log
+PREV_LOG_FILE=\${LOG_DIR}/prev_balance_check.log
 MAX_LOG_SIZE=10240
 
 # rotate logs
 rotate_logs() {
-    if [ -f "${LOG_FILE}" ]; then
-        local log_size_kb=$(du -k "${LOG_FILE}" | cut -f1)
-        if [ "${log_size_kb}" -ge "${MAX_LOG_SIZE}" ]; then
-            mv "${LOG_FILE}" "${LOG_FILE}.1"
-            touch "${LOG_FILE}"
+    if [ -f "\${LOG_FILE}" ]; then
+        local log_size_kb=\$(du -k "\${LOG_FILE}" | cut -f1)
+        if [ "\${log_size_kb}" -ge "\${MAX_LOG_SIZE}" ]; then
+            mv "\${LOG_FILE}" "\${LOG_FILE}.1"
+            touch "\${LOG_FILE}"
         fi
     fi
 }
 
 # Create log directory
-mkdir -p ${LOG_DIR}
+mkdir -p \${LOG_DIR}
 
 # Rotate logs
 rotate_logs
 
 # Get current node info
-current_output=$(${NODE_CMD} 2>&1)
+current_output=\$(${NODE_CMD} 2>&1)
 
 # Log timestamp
-timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+timestamp=\$(date '+%Y-%m-%d %H:%M:%S')
 
 # Extract current balance
-current_balance=$(echo "${current_output}" | grep -oP '(?<=Unclaimed balance: )[0-9]+\.[0-9]+')
+current_balance=\$(echo "\${current_output}" | grep -oP '(?<=Unclaimed balance: )[0-9]+\.[0-9]+')
 
 # Read previous balance
-if [ -f "${PREV_LOG_FILE}" ]; then
-    previous_balance=$(cat ${PREV_LOG_FILE})
+if [ -f "\${PREV_LOG_FILE}" ]; then
+    previous_balance=\$(cat \${PREV_LOG_FILE})
 else
     previous_balance=0
 fi
 
 # Calculate balance difference
-balance_diff=$(echo "$current_balance - $previous_balance" | bc)
+balance_diff=\$(echo "\$current_balance - \$previous_balance" | bc)
 
 # Log balances and difference
-echo "${timestamp} - Previous balance: ${previous_balance} QUIL, Current balance: ${current_balance} QUIL, Difference: ${balance_diff} QUIL" | tee -a ${LOG_FILE}
+echo "\${timestamp} - Previous balance: \${previous_balance} QUIL, Current balance: \${current_balance} QUIL, Difference: \${balance_diff} QUIL" | tee -a \${LOG_FILE}
 
 # Save current balance for next run
-echo "${current_balance}" > ${PREV_LOG_FILE}
+echo "\${current_balance}" > \${PREV_LOG_FILE}
 
 EOF_SCRIPT
 check_command "Failed to create temporary script"
