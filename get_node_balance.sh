@@ -55,11 +55,16 @@ cat << EOF_SCRIPT >| $TEMP_SCRIPT_FILE
 extract_node_version() {
     local version_info
     version_info=\$(journalctl -u ceremonyclient -r --no-hostname -n 1 -g "Quilibrium Node" -o cat)
+    echo "version_info: \$version_info" # Debug output
     local version
     version=\$(echo "\$version_info" | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
     local patch
     patch=\$(echo "\$version_info" | grep -oP '(?<=-p)[0-9]+')
-    echo "\$version.\$patch"
+    if [ -z "\$patch" ]; then
+        echo "\$version"
+    else
+        echo "\$version.\$patch"
+    fi
 }
 
 # Get node version
