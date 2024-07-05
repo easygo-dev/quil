@@ -1,5 +1,9 @@
 #!/bin/bash
 
+NODE_VERSION=1.4.21
+#Node version not used - executiuon via release_autorun 
+QCLIENT_VERSION=1.4.19.1
+
 cat << "EOF"
 
                     QQQQQQQQQ       1111111   
@@ -32,16 +36,12 @@ Follow the guide at https://docs.quilibrium.one
 
 Made with 🔥 by LaMat - https://quilibrium.one
 ===========================================================================
-Modified by easygo for personal uses
-===========================================================================
 
 Processing... ⏳
 
 EOF
 
 sleep 7  # Add a 7-second delay
-
-VERSION="1.4.21"
 
 #==========================
 # GO UPGRADE
@@ -136,19 +136,17 @@ echo "✅ Downloaded the latest changes successfully."
 ARCH=$(uname -m)
 OS=$(uname -s)
 
-# Determine the Node binary name based on the architecture and OS
+# Determine the node binary name based on the architecture and OS
 if [ "$ARCH" = "x86_64" ]; then
     if [ "$OS" = "Linux" ]; then
-        NODE_BINARY="node-$VERSION-linux-amd64"
+        NODE_BINARY="node-$NODE_VERSION-linux-amd64"
         GO_BINARY="go1.22.4.linux-amd64.tar.gz"
-        QCLIENT_BINARY="qclient-$VERSION-linux-amd64"
+        QCLIENT_BINARY="qclient-$QCLIENT_VERSION-linux-amd64"
     elif [ "$OS" = "Darwin" ]; then
-        NODE_BINARY="node-$VERSION-darwin-amd64"
+        NODE_BINARY="node-$NODE_VERSION-darwin-amd64"
         GO_BINARY="go1.22.44.linux-amd64.tar.gz"
-        QCLIENT_BINARY="qclient-$VERSION-darwin-arm64"
+        QCLIENT_BINARY="qclient-$QCLIENT_VERSION-darwin-arm64"
     fi
-
-# Determine the qClient binary name based on the architecture and OS
 elif [ "$ARCH" = "aarch64" ]; then
     if [ "$OS" = "Linux" ]; then
         NODE_BINARY="node-$VERSION-linux-arm64"
@@ -156,9 +154,34 @@ elif [ "$ARCH" = "aarch64" ]; then
     elif [ "$OS" = "Darwin" ]; then
         NODE_BINARY="node-$VERSION-darwin-arm64"
         GO_BINARY="go1.22.4.linux-arm64.tar.gz"
-        QCLIENT_BINARY="qclient-$VERSION-linux-arm64"
+        QCLIENT_BINARY="qclient-$QCLIENT_VERSION-linux-arm64"
     fi
 fi
+
+#==========================
+# QCLIENT UPDATE
+#==========================
+
+# Build qClient with GO
+# echo "⏳ Building qCiient..."
+# sleep 1  # Add a 1-second delay
+# GOEXPERIMENT=arenas go build -o qclient main.go
+
+# Step 4:Update qClient with binary
+echo "Updating qClient"
+sleep 1  # Add a 1-second delay
+cd ~/ceremonyclient/client
+rm -f qclient
+wget https://releases.quilibrium.com/$QCLIENT_BINARY
+mv $QCLIENT_BINARY qclient
+chmod +x qclient
+
+# Get the current user's home directory
+HOME=$(eval echo ~$HOME_DIR)
+
+# Use the home directory in the path
+NODE_PATH="$HOME/ceremonyclient/node"
+EXEC_START="$NODE_PATH/release_autorun.sh"
 
 #==========================
 # SERVICE UPDATE
@@ -211,7 +234,7 @@ systemctl enable ceremonyclient
 service ceremonyclient start
 
 # Showing the node version and logs
-echo "🌟Your Qnode is now updated to V$VERSION !"
+echo "🌟Your node is now updated to v$NODE_VERSION !"
 echo ""
 echo "⏳ Showing the node log... (CTRL+C to exit)"
 echo ""
