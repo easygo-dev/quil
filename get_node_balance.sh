@@ -20,7 +20,7 @@ TEMP_SCRIPT_FILE=$SCRIPT_DIR/balance_check_temp.sh
 
 # Function to check if a command succeeded
 check_command() {
-    if [ $? -ne 0 ]; then
+    if [ $? -ne 0 ];then
         echo "Error: $1"
         sleep 1
         exit 1
@@ -29,9 +29,9 @@ check_command() {
 
 # Get CPU architecture
 ARCH=$(uname -m)
-if [ "$ARCH" == "x86_64" ]; then
+if [ "$ARCH" == "x86_64" ];then
     ARCH="amd64"
-elif [ "$ARCH" == "aarch64" ]; then
+elif [ "$ARCH" == "aarch64" ];then
     ARCH="arm64"
 else
     echo "Unsupported architecture: $ARCH"
@@ -48,103 +48,98 @@ check_command "Failed to create script directory"
 # Create the temporary script
 echo "Creating temporary script..."
 sleep 1
-cat << EOF_SCRIPT >| $TEMP_SCRIPT_FILE
+cat << 'EOF_SCRIPT' >| $TEMP_SCRIPT_FILE
 #!/bin/bash
 
 # Function to extract node version
 extract_node_version() {
-    local version_info
-    version_info=\$(journalctl -u ceremonyclient -r --no-hostname -n 1 -g "Quilibrium Node" -o cat)
-    echo "version_info: \$version_info" # Debug output
-    local version
-    version=\$(echo "\$version_info" | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
-    local patch
-    patch=\$(echo "\$version_info" | grep -oP '(?<=-p)[0-9]+')
-    if [ -z "\$patch" ]; then
-        echo "\$version"
+    version_info=$(journalctl -u ceremonyclient -r --no-hostname -n 1 -g "Quilibrium Node" -o cat)
+    version=$(echo "$version_info" | grep -oP '(?<=Quilibrium Node - v)[0-9]+\.[0-9]+\.[0-9]+')
+    patch=$(echo "$version_info" | grep -oP '(?<=-p)[0-9]+')
+    if [ -z "$patch" ];then
+        echo "$version"
     else
-        echo "\$version.\$patch"
+        echo "$version.$patch"
     fi
 }
 
 # Get node version
-NODE_VERSION=\$(extract_node_version)
-echo "Detected node version: \$NODE_VERSION"
+NODE_VERSION=$(extract_node_version)
+echo "Detected node version: $NODE_VERSION"
 
 # Define command to get node info
-NODE_CMD="cd ~/ceremonyclient/node && ./node-\${NODE_VERSION}-linux-$ARCH -node-info"
-echo "NODE_CMD: \$NODE_CMD" # Debug output
+NODE_CMD="cd ~/ceremonyclient/node && ./node-${NODE_VERSION}-linux-$ARCH -node-info"
+echo "NODE_CMD: $NODE_CMD" # Debug output
 
 # Check if node binary exists
-if [ ! -f "$HOME/ceremonyclient/node/node-\${NODE_VERSION}-linux-$ARCH" ]; then
+if [ ! -f "$HOME/ceremonyclient/node/node-${NODE_VERSION}-linux-$ARCH" ]; then
     echo "Error: Node binary does not exist"
     exit 1
 fi
 
 # log
 LOG_DIR=/root/scripts/log
-LOG_FILE=\${LOG_DIR}/balance_check.log
-CSV_FILE=\${LOG_DIR}/balance_check.csv
+LOG_FILE=${LOG_DIR}/balance_check.log
+CSV_FILE=${LOG_DIR}/balance_check.csv
 MAX_LOG_SIZE=10240
 
 # rotate logs
 rotate_logs() {
-    if [ -f "\${LOG_FILE}" ]; then
-        local log_size_kb
-        log_size_kb=\$(du -k "\${LOG_FILE}" | cut -f1)
-        if [ "\${log_size_kb}" -ge "\${MAX_LOG_SIZE}" ]; then
-            mv "\${LOG_FILE}" "\${LOG_FILE}.1"
-            touch "\${LOG_FILE}"
+    if [ -f "$LOG_FILE" ]; then
+        log_size_kb=$(du -k "$LOG_FILE" | cut -f1)
+        if [ "$log_size_kb" -ge "$MAX_LOG_SIZE" ]; then
+            mv "$LOG_FILE" "$LOG_FILE.1"
+            touch "$LOG_FILE"
         fi
     fi
 }
 
 # Create log directory
-mkdir -p \${LOG_DIR}
+mkdir -p $LOG_DIR
 
 # Rotate logs
 rotate_logs
 
 # Get current node info
-current_output=\$(eval "\$NODE_CMD" 2>&1)
-echo "current_output: \$current_output" # Debug output
+current_output=$(eval "$NODE_CMD" 2>&1)
+echo "current_output: $current_output" # Debug output
 
 # Log timestamp
-timestamp=\$(date '+%Y-%m-%d %H:%M:%S')
+timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
 # Extract current balance
-current_balance=\$(echo "\${current_output}" | grep -oP '(?<=Unclaimed balance: )[0-9]+\.[0-9]+')
-echo "current_balance: \$current_balance" # Debug output
+current_balance=$(echo "$current_output" | grep -oP '(?<=Unclaimed balance: )[0-9]+\.[0-9]+')
+echo "current_balance: $current_balance" # Debug output
 
 # Read previous balance from CSV file
-if [ -f "\${CSV_FILE}" ]; then
-    previous_balance=\$(tail -n 1 \${CSV_FILE} | cut -d ',' -f 2)
+if [ -f "$CSV_FILE" ]; then
+    previous_balance=$(tail -n 1 $CSV_FILE | cut -d ',' -f 2)
 else
     previous_balance=0
-    echo "Date,Current Balance,Previous Balance,Difference" > \${CSV_FILE}
-    echo "\${timestamp},\${current_balance},0,0" >> \${CSV_FILE}
+    echo "Date,Current Balance,Previous Balance,Difference" > $CSV_FILE
+    echo "$timestamp,$current_balance,0,0" >> $CSV_FILE
     echo "No previous balance found. CSV file created with current balance."
 fi
-echo "previous_balance: \$previous_balance" # Debug output
+echo "previous_balance: $previous_balance" # Debug output
 
 # Calculate balance difference
-if [ -z "\$current_balance" ]; then
-    echo "\${timestamp} - Error: current balance is empty" | tee -a \${LOG_FILE}
+if [ -z "$current_balance" ]; then
+    echo "$timestamp - Error: current balance is empty" | tee -a $LOG_FILE
     exit 1
 fi
 
-if [ -z "\$previous_balance" ]; then
+if [ -z "$previous_balance" ]; then
     previous_balance=0
 fi
 
-balance_diff=\$(echo "\$current_balance - \$previous_balance" | bc)
-echo "balance_diff: \$balance_diff" # Debug output
+balance_diff=$(echo "$current_balance - $previous_balance" | bc)
+echo "balance_diff: $balance_diff" # Debug output
 
 # Log balances and difference
-echo "\${timestamp} - Previous balance: \${previous_balance} QUIL, Current balance: \${current_balance} QUIL, Difference: \${balance_diff} QUIL" | tee -a \${LOG_FILE}
+echo "$timestamp - Previous balance: $previous_balance QUIL, Current balance: $current_balance QUIL, Difference: $balance_diff QUIL" | tee -a $LOG_FILE
 
 # Save current balance to CSV file
-echo "\${timestamp},\${current_balance},\${previous_balance},\${balance_diff}" >> \${CSV_FILE}
+echo "$timestamp,$current_balance,$previous_balance,$balance_diff" >> $CSV_FILE
 
 EOF_SCRIPT
 check_command "Failed to create temporary script"
