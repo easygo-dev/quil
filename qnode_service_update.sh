@@ -41,7 +41,7 @@ EOF
 
 sleep 7  # Add a 7-second delay
 
-VERSION="1.4.20.1"
+VERSION="1.4.21"
 
 #==========================
 # GO UPGRADE
