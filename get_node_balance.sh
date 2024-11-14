@@ -4,21 +4,18 @@ cat << "EOF"
 Processing...
 EOF
 
-sleep 5 # add sleep time
+sleep 5
 
-# Check if ceremonyclient.service exists
 SERVICE_FILE="/lib/systemd/system/ceremonyclient.service"
 if [ ! -f "$SERVICE_FILE" ]; then
     echo "Error: The file $SERVICE_FILE does not exist. Ceremonyclient service setup failed."
     exit 1
 fi
 
-# Define variables
 SCRIPT_DIR=~/scripts
 SCRIPT_FILE=$SCRIPT_DIR/balance_check.sh
 TEMP_SCRIPT_FILE=$SCRIPT_DIR/balance_check_temp.sh
 
-# Function to check if a command succeeded
 check_command() {
     if [ $? -ne 0 ]; then
         echo "Error: $1"
@@ -27,7 +24,6 @@ check_command() {
     fi
 }
 
-# Get CPU architecture
 ARCH=$(uname -m)
 if [ "$ARCH" == "x86_64" ]; then
     ARCH="amd64"
@@ -39,13 +35,11 @@ else
 fi
 echo "Detected architecture: $ARCH"
 
-# Create the scripts directory if it doesn't exist
 echo "Creating script directory..."
 sleep 1
 mkdir -p $SCRIPT_DIR
 check_command "Failed to create script directory"
 
-# Create the temporary script
 echo "Creating temporary script..."
 sleep 1
 cat << EOF_SCRIPT >| $TEMP_SCRIPT_FILE
@@ -66,27 +60,22 @@ extract_node_version() {
     fi
 }
 
-# Get node version
 NODE_VERSION=\$(extract_node_version)
 echo "Detected node version: \$NODE_VERSION"
 
-# Define command to get node info
 NODE_CMD="cd ~/ceremonyclient/node && ./node-\${NODE_VERSION}-linux-$ARCH -node-info"
-echo "NODE_CMD: \$NODE_CMD" # Debug output
+echo "NODE_CMD: \$NODE_CMD"
 
-# Check if node binary exists
 if [ ! -f "\$HOME/ceremonyclient/node/node-\${NODE_VERSION}-linux-$ARCH" ]; then
     echo "Error: Node binary does not exist"
     exit 1
 fi
 
-# log
 LOG_DIR=/root/scripts/log
 LOG_FILE=\${LOG_DIR}/balance_check.log
 CSV_FILE=\${LOG_DIR}/balance_check.csv
 MAX_LOG_SIZE=10240
 
-# rotate logs
 rotate_logs() {
     if [ -f "\${LOG_FILE}" ]; then
         local log_size_kb
@@ -98,24 +87,17 @@ rotate_logs() {
     fi
 }
 
-# Create log directory
 mkdir -p \${LOG_DIR}
-
-# Rotate logs
 rotate_logs
 
-# Get current node info
 current_output=\$(eval "\$NODE_CMD" 2>&1)
-echo "current_output: \$current_output" # Debug output
+echo "current_output: \$current_output"
 
-# Log timestamp
 timestamp=\$(date '+%Y-%m-%d %H:%M:%S')
 
-# Extract current balance
-current_balance=\$(echo "\${current_output}" | grep -oP '(?<=Unclaimed balance: )[0-9]+\.[0-9]+')
-echo "current_balance: \$current_balance" # Debug output
+current_balance=\$(echo "\${current_output}" | grep "Owned balance:" | awk '{print \$3}')
+echo "current_balance: \$current_balance"
 
-# Read previous balance from CSV file
 if [ -f "\${CSV_FILE}" ]; then
     previous_balance=\$(tail -n 1 \${CSV_FILE} | cut -d ',' -f 2)
 else
@@ -124,9 +106,8 @@ else
     echo "\${timestamp},\${current_balance},0,0" >> \${CSV_FILE}
     echo "No previous balance found. CSV file created with current balance."
 fi
-echo "previous_balance: \$previous_balance" # Debug output
+echo "previous_balance: \$previous_balance"
 
-# Calculate balance difference
 if [ -z "\$current_balance" ]; then
     echo "\${timestamp} - Error: current balance is empty" | tee -a \${LOG_FILE}
     exit 1
@@ -137,34 +118,27 @@ if [ -z "\$previous_balance" ]; then
 fi
 
 balance_diff=\$(echo "\$current_balance - \$previous_balance" | bc)
-echo "balance_diff: \$balance_diff" # Debug output
+echo "balance_diff: \$balance_diff"
 
-# Log balances and difference
 echo "\${timestamp} - Previous balance: \${previous_balance} QUIL, Current balance: \${current_balance} QUIL, Difference: \${balance_diff} QUIL" | tee -a \${LOG_FILE}
 
-# Save current balance to CSV file
 echo "\${timestamp},\${current_balance},\${previous_balance},\${balance_diff}" >> \${CSV_FILE}
-
 EOF_SCRIPT
 check_command "Failed to create temporary script"
 
-# Move the temporary script to the final script location
 mv $TEMP_SCRIPT_FILE $SCRIPT_FILE
 check_command "Failed to move temporary script to final script location"
 
-# Make the script executable
 echo "Making the script executable..."
 sleep 1
 chmod +x $SCRIPT_FILE
 check_command "Failed to make script executable"
 
-# Check if cron job already exists
 echo "⌛️ Checking if cron job exists..."
 sleep 1
 if crontab -l | grep -q "$SCRIPT_FILE"; then
     echo "Cron job already exists. Skipping..."
 else
-    # Create a cron job to run the script every day at the same time
     echo "⌛️ Setting up cron job..."
     sleep 1
     if (crontab -l 2>/dev/null; echo "0 0 * * * $SCRIPT_FILE") | crontab -; then
